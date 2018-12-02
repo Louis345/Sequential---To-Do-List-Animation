@@ -8,21 +8,51 @@ import {
   LayoutAnimation,
   UIManager,
   Dimensions,
-  Extrapolate
+  Easing
 } from 'react-native';
-const colors = ['#FFFFFD', '#FFFFFD', '#FFFFFD', '#FFFFFD'];
-const { concat } = Animated;
+import { EvilIcons } from '@expo/vector-icons';
+const colors = ['#FFFFFD', '#FFFFFD', '#FFFFFD', '#FFFFFD', '#FFFFFD'];
+
 UIManager.setLayoutAnimationEnabledExperimental &&
   UIManager.setLayoutAnimationEnabledExperimental(true);
 const { width } = Dimensions.get('window');
-const SWIPE_THRESHOLD = width * 0.3;
+const SWIPE_THRESHOLD = width * 0.2;
+const CARD_WIDTH = 360;
+const CARD_HEIGHT = 300;
 export default class Card extends React.Component {
   state = {
     animation: new Animated.ValueXY(0),
     interpolate: new Animated.Value(0),
+    iconOpacity: new Animated.Value(0),
+    scale: new Animated.Value(0.7),
+    keepTrackOfScale: 0.7,
     cardList: ['clean house', 'go out to eat', 'test', 'hi'],
     swipedCardIndex: 0
   };
+
+  // componentWillUpdate() {
+  //   const animationConfigs = {
+  //     duration: 700,
+  //     create: {
+  //       type: 'linear',
+  //       property: 'opacity'
+  //     },
+  //     update: {
+  //       type: 'spring',
+  //       springDamping: 0.4,
+  //       property: 'scaleXY'
+  //     },
+  //     delete: {
+  //       type: 'linear',
+  //       property: 'opacity'
+  //     }
+  //   };
+  //   UIManager.setLayoutAnimationEnabledExperimental &&
+  //     UIManager.setLayoutAnimationEnabledExperimental(true);
+
+  //   LayoutAnimation.configureNext(animationConfigs);
+  // }
+
   componentWillMount() {
     this._panResponder = PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -34,12 +64,21 @@ export default class Card extends React.Component {
         });
       },
       onPanResponderRelease: (event, gestureState) => {
-        // LayoutAnimation.configureNext(
-        //   animationConfigs.get(this.state.animation)
-        // );
+        if (gestureState.dx > SWIPE_THRESHOLD * 0.3) {
+          Animated.timing(this.state.iconOpacity, {
+            toValue: 0.5,
+            duration: 100
+          }).start(() => {
+            this.state.iconOpacity.setValue(0);
+          });
+        }
         if (gestureState.dx > SWIPE_THRESHOLD) {
-          Animated.spring(this.state.animation, {
-            toValue: { x: width, y: 0, duration: 0 }
+          Animated.timing(this.state.interpolate, {
+            toValue: 1,
+            duration: 100
+          }).start();
+          Animated.timing(this.state.animation, {
+            toValue: { x: width * 2, y: 0, duration: 100 }
           }).start(() => {
             this.onSwipeComplete();
           });
@@ -53,98 +92,132 @@ export default class Card extends React.Component {
   }
 
   onSwipeComplete() {
-    this.state.animation.setValue({ x: 0, y: 0 });
-    this.setState({ swipedCardIndex: this.state.swipedCardIndex + 1 });
+    let { keepTrackOfScale } = this.state;
+
+    this.setState(
+      {
+        swipedCardIndex: this.state.swipedCardIndex + 1,
+        keepTrackOfScale: keepTrackOfScale + 0.02,
+        cardList: this.state.cardList.filter((card, index) => index !== 0)
+      },
+      () => {
+        UIManager.setLayoutAnimationEnabledExperimental &&
+          UIManager.setLayoutAnimationEnabledExperimental(true);
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+        this.state.animation.setValue({ x: 0, y: 0 });
+        this.state.interpolate.setValue(0);
+        Animated.timing(this.state.opacityStyles, {
+          toValue: 1,
+          duration: 100
+        });
+
+        Animated.timing(this.state.scale, {
+          toValue: keepTrackOfScale,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.linear
+        }).start();
+      }
+    );
   }
 
   renderCardList = () => {
-    const { animation } = this.state;
+    const { animation, iconOpacity } = this.state;
 
     const rotateZ = animation.x.interpolate({
       inputRange: [(-width / 2) * 1.5, 0, (width / 2) * 1.5],
       outputRange: ['-120deg', '0deg', '120deg']
     });
 
-    const scaleInterpolate = this.state.interpolate.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['rgb(255,99,71)', 'rgb(99,71,255)']
-    });
-
     const animatedStyles = {
       // transform: this.state.animation.getTranslateTransform()
-      transform: [
-        { translateX: this.state.animation.x },
-        { translateY: this.state.animation.y },
-        { rotateZ }
-      ]
+      transform: [{ translateX: this.state.animation.x }, { rotateZ }]
     };
 
-    const backgroundColorStyles = {
-      backgroundColor: scaleInterpolate
+    const opacityStyles = {
+      opacity: iconOpacity
     };
 
-    const { cardList, swipedCardIndex } = this.state;
-    console.log(swipedCardIndex);
-    let scale = 1.0;
+    const { cardList } = this.state;
+
+    let scale = 1.1;
     let bottom = 10;
-    let zIndex = 0;
+
     return cardList.map((item, index) => {
-      scale -= 0.1;
       bottom += index === 0 ? 0 : 20;
-      if (index < swipedCardIndex) {
-        console.log('not displaying card');
-        return null;
-      }
-      if (index === swipedCardIndex) {
-        console.log('matching');
+      scale -= 0.1;
+      // if (index < swipedCardIndex) {
+      //   return null;
+      // }
+      if (index === 0) {
         return (
           <Animated.View
             {...this._panResponder.panHandlers}
             style={[
               {
-                width: 300,
-                height: 290,
+                width: CARD_WIDTH,
+                height: CARD_HEIGHT + 10,
                 position: 'absolute',
                 zIndex: cardList.length - index,
                 bottom: 0,
-                backgroundColor: colors[index],
-                opacity: 1,
-                transform: [{ scale: scale }],
-                justifyContent: 'center',
-                alignItems: 'center',
+                backgroundColor: '#E9E9E8',
                 borderRadius: 5
               },
-              animatedStyles,
-              backgroundColorStyles
+              animatedStyles
             ]}
             key={index}
           >
-            <Text style={styles.text}>{item}</Text>
+            <View style={styles.textContainer}>
+              <Text style={styles.title}>Take The Dog Out</Text>
+            </View>
+            <View style={styles.lineSperator} />
+            <View>
+              <Animated.View
+                style={[
+                  {
+                    zIndex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  },
+                  opacityStyles
+                ]}
+              >
+                <EvilIcons name="check" size={CARD_WIDTH - 60} color="green" />
+              </Animated.View>
+
+              <View style={{ zIndex: 0, position: 'absolute' }}>
+                <Text style={styles.noteText}>Notes:</Text>
+                <Text style={styles.text}>{item}</Text>
+              </View>
+            </View>
           </Animated.View>
         );
       }
-      {
-        console.log('showing remaining cards');
-      }
+
       return (
         <View
           style={[
             {
-              width: 300,
-              height: 300,
+              width: CARD_WIDTH,
+              height: CARD_HEIGHT,
               position: 'absolute',
               zIndex: cardList.length - index,
-              bottom: bottom,
-              backgroundColor: colors[index],
+              bottom: bottom + 1,
+              backgroundColor: '#E9E9E8',
               opacity: 1,
               transform: [{ scale: scale }],
-              justifyContent: 'center',
-              alignItems: 'center',
               borderRadius: 5
             }
           ]}
           key={index}
         >
+          <View style={styles.textContainer}>
+            <Text style={styles.title}>Take The Dog Out</Text>
+          </View>
+          <View style={styles.lineSperator} />
+
+          <Text style={styles.noteText}>Notes:</Text>
+
           <Text style={styles.text}>{item}</Text>
         </View>
       );
@@ -152,69 +225,55 @@ export default class Card extends React.Component {
   };
 
   render() {
-    return <View style={styles.container}>{this.renderCardList()}</View>;
+    const { scale } = this.state;
+    console.log(scale);
+    const animatedStyles = {
+      // transform: this.state.animation.getTranslateTransform()
+      transform: [{ scale: scale }]
+    };
+    return (
+      <Animated.View
+        style={[
+          {
+            flex: 0.6,
+            height: 100
+          },
+          animatedStyles
+        ]}
+      >
+        {this.renderCardList()}
+      </Animated.View>
+    );
   }
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 0.6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 100
-  },
-  box0: {
-    width: 300,
-    height: 150,
-    position: 'absolute',
-    zIndex: 1,
-    bottom: 60,
-    backgroundColor: 'red',
-    opacity: 0.3,
-    transform: [{ scale: 0.7 }],
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  box1: {
-    width: 300,
-    height: 150,
-    position: 'absolute',
-    zIndex: 1,
-    bottom: 40,
-    backgroundColor: 'red',
-    opacity: 0.3,
-    transform: [{ scale: 0.8 }],
-    justifyContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  box2: {
-    width: 300,
-    height: 150,
-    position: 'absolute',
-    zIndex: 2,
-    bottom: 20,
-    backgroundColor: 'green',
-    opacity: 0.6,
-    transform: [{ scale: 0.9 }],
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  box3: {
-    width: 300,
-    height: 150,
-    position: 'absolute',
-    zIndex: 3,
-    bottom: 0,
-    backgroundColor: 'blue',
-    opacity: 1,
-    transform: [{ scale: 1.0 }],
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
+  container: {},
   text: {
-    color: '#ffffff',
-    fontSize: 10
+    color: '#454544',
+    fontSize: 20,
+    marginLeft: 20
+  },
+  title: {
+    alignItems: 'flex-start',
+    fontSize: 30,
+    marginTop: 20,
+    marginBottom: 20,
+    marginLeft: 20
+  },
+  textContainer: {
+    marginLeft: 20
+  },
+  noteText: {
+    color: '#BDBDBD',
+    fontSize: 25,
+    marginLeft: 20,
+    marginBottom: 10,
+    zIndex: -1
+  },
+  lineSperator: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    width: CARD_WIDTH
   }
 });
