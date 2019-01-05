@@ -214,7 +214,7 @@ export default class Card extends React.Component {
 
   render() {
     const { scale } = this.state;
-    console.log(scale);
+
     const animatedStyles = {
       transform: [{ scale: scale }]
     };
@@ -222,8 +222,9 @@ export default class Card extends React.Component {
       <Animated.View
         style={[
           {
-            flex: 0.6,
-            height: 100
+            flex: 0.7,
+            alignItems: 'center',
+            justifyCotent: 'center'
           },
           animatedStyles
         ]}
