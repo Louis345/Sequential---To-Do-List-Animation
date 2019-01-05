@@ -11,12 +11,11 @@ import {
   Easing
 } from 'react-native';
 import { EvilIcons } from '@expo/vector-icons';
-const colors = ['#FFFFFD', '#FFFFFD', '#FFFFFD', '#FFFFFD', '#FFFFFD'];
 
 UIManager.setLayoutAnimationEnabledExperimental &&
   UIManager.setLayoutAnimationEnabledExperimental(true);
 const { width } = Dimensions.get('window');
-const SWIPE_THRESHOLD = width * 0.2;
+const SWIPE_THRESHOLD = width * 0.25;
 const CARD_WIDTH = 360;
 const CARD_HEIGHT = 300;
 export default class Card extends React.Component {
@@ -30,29 +29,6 @@ export default class Card extends React.Component {
     swipedCardIndex: 0
   };
 
-  // componentWillUpdate() {
-  //   const animationConfigs = {
-  //     duration: 700,
-  //     create: {
-  //       type: 'linear',
-  //       property: 'opacity'
-  //     },
-  //     update: {
-  //       type: 'spring',
-  //       springDamping: 0.4,
-  //       property: 'scaleXY'
-  //     },
-  //     delete: {
-  //       type: 'linear',
-  //       property: 'opacity'
-  //     }
-  //   };
-  //   UIManager.setLayoutAnimationEnabledExperimental &&
-  //     UIManager.setLayoutAnimationEnabledExperimental(true);
-
-  //   LayoutAnimation.configureNext(animationConfigs);
-  // }
-
   componentWillMount() {
     this._panResponder = PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -64,30 +40,46 @@ export default class Card extends React.Component {
         });
       },
       onPanResponderRelease: (event, gestureState) => {
-        if (gestureState.dx > SWIPE_THRESHOLD * 0.3) {
-          Animated.timing(this.state.iconOpacity, {
-            toValue: 0.5,
-            duration: 100
-          }).start(() => {
-            this.state.iconOpacity.setValue(0);
-          });
-        }
         if (gestureState.dx > SWIPE_THRESHOLD) {
-          Animated.timing(this.state.interpolate, {
-            toValue: 1,
-            duration: 100
-          }).start();
-          Animated.timing(this.state.animation, {
-            toValue: { x: width * 2, y: 0, duration: 100 }
-          }).start(() => {
-            this.onSwipeComplete();
-          });
+          this.swipeRight();
+        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
+          this.swipeLeft();
         } else {
           Animated.timing(this.state.animation, {
             toValue: { x: 0, y: 0, duration: 250 }
           }).start();
         }
       }
+    });
+  }
+
+  swipeLeft() {
+    Animated.timing(this.state.interpolate, {
+      toValue: 1,
+      duration: 100
+    }).start();
+    Animated.timing(this.state.animation, {
+      toValue: { x: width * -2, y: 0, duration: 100 }
+    }).start(() => {
+      this.onSwipeComplete();
+    });
+  }
+
+  swipeRight() {
+    Animated.timing(this.state.iconOpacity, {
+      toValue: 0.5,
+      duration: 100
+    }).start(() => {
+      this.state.iconOpacity.setValue(0);
+    });
+    Animated.timing(this.state.interpolate, {
+      toValue: 1,
+      duration: 100
+    }).start();
+    Animated.timing(this.state.animation, {
+      toValue: { x: width * 2, y: 0, duration: 100 }
+    }).start(() => {
+      this.onSwipeComplete();
     });
   }
 
@@ -146,9 +138,7 @@ export default class Card extends React.Component {
     return cardList.map((item, index) => {
       bottom += index === 0 ? 0 : 20;
       scale -= 0.1;
-      // if (index < swipedCardIndex) {
-      //   return null;
-      // }
+
       if (index === 0) {
         return (
           <Animated.View
@@ -175,9 +165,7 @@ export default class Card extends React.Component {
               <Animated.View
                 style={[
                   {
-                    zIndex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    zIndex: 1
                   },
                   opacityStyles
                 ]}
@@ -228,7 +216,6 @@ export default class Card extends React.Component {
     const { scale } = this.state;
     console.log(scale);
     const animatedStyles = {
-      // transform: this.state.animation.getTranslateTransform()
       transform: [{ scale: scale }]
     };
     return (
