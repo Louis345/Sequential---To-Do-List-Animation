@@ -26,7 +26,8 @@ export default class Card extends React.Component {
     scale: new Animated.Value(0.7),
     keepTrackOfScale: 0.7,
     cardList: ['clean house', 'go out to eat', 'test', 'hi'],
-    swipedCardIndex: 0
+    swipedCardIndex: 0,
+    undoOpacity: new Animated.Value(0)
   };
 
   componentWillMount() {
@@ -80,9 +81,16 @@ export default class Card extends React.Component {
       toValue: { x: width * 2, y: 0, duration: 100 }
     }).start(() => {
       this.onSwipeComplete();
+      this.animatedUndoText();
     });
   }
 
+  animatedUndoText = () => {
+    Animated.timing(this.state.undoOpacity, {
+      toValue: 1,
+      duration: 500
+    }).start();
+  };
   onSwipeComplete() {
     let { keepTrackOfScale } = this.state;
 
@@ -213,30 +221,54 @@ export default class Card extends React.Component {
   };
 
   render() {
-    const { scale } = this.state;
+    const { scale, undoOpacity } = this.state;
 
     const animatedStyles = {
       transform: [{ scale: scale }]
     };
+
+    const opacityAnimatedStyles = {
+      opacity: undoOpacity
+    };
+
     return (
-      <Animated.View
-        style={[
-          {
-            flex: 0.7,
-            alignItems: 'center',
-            justifyCotent: 'center'
-          },
-          animatedStyles
-        ]}
-      >
-        {this.renderCardList()}
-      </Animated.View>
+      <View style={styles.container}>
+        <Animated.View style={[styles.undo, opacityAnimatedStyles]}>
+          <Text style={styles.undoText}>Undo</Text>
+        </Animated.View>
+        <Animated.View
+          style={[
+            {
+              flex: 0.6,
+              alignItems: 'center',
+              justifyCotent: 'center'
+            },
+            animatedStyles
+          ]}
+        >
+          {this.renderCardList()}
+        </Animated.View>
+      </View>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    flex: 1
+  },
+  undo: {
+    height: 30,
+    width: 50,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    marginTop: 50,
+    marginLeft: 10
+  },
+  undoText: {
+    textAlign: 'center',
+    alignItems: 'center'
+  },
   text: {
     color: '#454544',
     fontSize: 20,
