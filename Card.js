@@ -8,7 +8,8 @@ import {
   LayoutAnimation,
   UIManager,
   Dimensions,
-  Easing
+  Easing,
+  SafeAreaView
 } from 'react-native';
 import { EvilIcons } from '@expo/vector-icons';
 
@@ -25,7 +26,12 @@ export default class Card extends React.Component {
     iconOpacity: new Animated.Value(0),
     scale: new Animated.Value(0.7),
     keepTrackOfScale: 0.7,
-    cardList: ['clean house', 'go out to eat', 'test', 'hi'],
+    cardList: [
+      'clean house',
+      'do homework',
+      'study react-native',
+      'clean room'
+    ],
     swipedCardIndex: 0,
     undoOpacity: new Animated.Value(0)
   };
@@ -101,13 +107,13 @@ export default class Card extends React.Component {
     ]).start();
   };
   onSwipeComplete() {
-    let { keepTrackOfScale } = this.state;
+    let { keepTrackOfScale, cardList, swipedCardIndex } = this.state;
 
     this.setState(
       {
-        swipedCardIndex: this.state.swipedCardIndex + 1,
+        swipedCardIndex: swipedCardIndex + 1,
         keepTrackOfScale: keepTrackOfScale + 0.02,
-        cardList: this.state.cardList.filter((card, index) => index !== 0)
+        cardList: cardList.filter((card, index) => index !== 0)
       },
       () => {
         UIManager.setLayoutAnimationEnabledExperimental &&
@@ -130,9 +136,22 @@ export default class Card extends React.Component {
     );
   }
 
-  renderCardList = () => {
-    const { animation, iconOpacity } = this.state;
+  resetCardList = () => {
+    setTimeout(() => {
+      this.setState({
+        cardList: [
+          'clean house',
+          'do homework',
+          'study react-native',
+          'clean room'
+        ]
+      });
+    }, 500);
+  };
 
+  renderCardList = () => {
+    const { animation, iconOpacity, cardList } = this.state;
+    cardList.length === 0 && this.resetCardList();
     const rotateZ = animation.x.interpolate({
       inputRange: [(-width / 2) * 1.5, 0, (width / 2) * 1.5],
       outputRange: ['-120deg', '0deg', '120deg']
@@ -146,8 +165,6 @@ export default class Card extends React.Component {
     const opacityStyles = {
       opacity: iconOpacity
     };
-
-    const { cardList } = this.state;
 
     let scale = 1.1;
     let bottom = 10;
@@ -175,7 +192,7 @@ export default class Card extends React.Component {
             key={index}
           >
             <View style={styles.textContainer}>
-              <Text style={styles.title}>Take The Dog Out</Text>
+              <Text style={styles.title}>Tasks</Text>
             </View>
             <View style={styles.lineSperator} />
             <View>
@@ -217,7 +234,7 @@ export default class Card extends React.Component {
           key={index}
         >
           <View style={styles.textContainer}>
-            <Text style={styles.title}>Take The Dog Out</Text>
+            <Text style={styles.title}>Tasks</Text>
           </View>
           <View style={styles.lineSperator} />
 
@@ -242,6 +259,9 @@ export default class Card extends React.Component {
 
     return (
       <View style={styles.container}>
+        <SafeAreaView style={{ justifyContent: 'center' }}>
+          <Text style={styles.mainText}>S E Q U E N T I A L</Text>
+        </SafeAreaView>
         <Animated.View style={[styles.undo, opacityAnimatedStyles]}>
           <Text style={styles.undoText}>Undo</Text>
         </Animated.View>
@@ -257,6 +277,12 @@ export default class Card extends React.Component {
         >
           {this.renderCardList()}
         </Animated.View>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ justifyContent: 'center', color: '#FFFFFE' }}>
+            {' '}
+            {this.state.cardList.length} ITEMS TO DO{' '}
+          </Text>
+        </View>
       </View>
     );
   }
@@ -294,6 +320,11 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     marginLeft: 20
+  },
+  mainText: {
+    fontSize: 20,
+    color: '#FFFFFE',
+    textAlign: 'center'
   },
   noteText: {
     color: '#BDBDBD',
