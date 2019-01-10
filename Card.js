@@ -86,10 +86,19 @@ export default class Card extends React.Component {
   }
 
   animatedUndoText = () => {
-    Animated.timing(this.state.undoOpacity, {
-      toValue: 1,
-      duration: 500
-    }).start();
+    Animated.sequence([
+      Animated.timing(this.state.undoOpacity, {
+        toValue: 1,
+        duration: 500
+      }),
+      Animated.delay(500),
+      Animated.parallel([
+        Animated.timing(this.state.undoOpacity, {
+          toValue: 0,
+          duration: 500
+        })
+      ])
+    ]).start();
   };
   onSwipeComplete() {
     let { keepTrackOfScale } = this.state;
@@ -263,11 +272,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 5,
     marginTop: 50,
-    marginLeft: 10
+    marginLeft: 10,
+    justifyContent: 'center'
   },
   undoText: {
+    fontSize: 15,
     textAlign: 'center',
-    alignItems: 'center'
+    color: '#2F98C7'
   },
   text: {
     color: '#454544',
