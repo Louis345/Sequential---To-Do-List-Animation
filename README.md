@@ -1,4 +1,4 @@
-# Can this animation be done in React-Native#
+# Can this animation be done in React-Native #
 I have been inspired by William Candillon (https://www.youtube.com/user/wcandill) to find complicated animations and see if it can be done with React-Native. It's a way for me to improve my skill set. This is an example of a to-do-app I found on Dribble https://dribbble.com/shots/3362700-Sequential-To-Do-List-Animation. I did my best to replicate the design and flow.
 
 ## Orginal Work On Dibble
